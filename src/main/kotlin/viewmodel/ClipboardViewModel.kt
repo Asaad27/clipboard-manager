@@ -39,9 +39,11 @@ class ClipboardViewModel(
                 val systemClipboardContent = systemClipboard.getCurrentContent() ?: continue
                 val lastContent = _clipboardContents.value.lastOrNull() ?: ClipboardModel()
                 if (systemClipboardContent != lastContent) {
-                    _clipboardContents.value += systemClipboardContent
                     viewModelScope.launch {
-                        clipboardService.saveClipboardContent(systemClipboardContent)
+                        clipboardService.saveClipboardContent(systemClipboardContent).also {
+                            println("saved: $it")
+                            _clipboardContents.value += it
+                        }
                     }
                 }
 

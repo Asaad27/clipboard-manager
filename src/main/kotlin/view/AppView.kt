@@ -73,7 +73,6 @@ fun App(viewModel: ClipboardViewModel) {
                                 val isLastInClipboard = copiedItemIndexState.value == index
                                 val isFocused = focusedIndexState.value == index
                                 ClipboardItem(item, isLastInClipboard, isFocused, onItemClicked = {
-                                    println("via click: $index")
                                     viewModel.onItemClicked(it)
                                 })
                             }
@@ -165,19 +164,16 @@ fun onKeyEvent(
     return when (keyEvent.key) {
         Key.DirectionDown -> {
             focusedIndex.value = minOf(((focusedIndex.value ?: -1) + 1), clipboardSize - 1)
-            println("focusedIndex.value: ${focusedIndex.value}")
             true
         }
 
         Key.DirectionUp -> {
             focusedIndex.value = maxOf((focusedIndex.value ?: clipboardSize) - 1, 0)
-            println("focusedIndex.value: ${focusedIndex.value}")
             true
         }
 
         Key.Enter -> {
             focusedIndex.value?.let {
-                println("via enter: $it")
                 viewModel.onItemClicked(clipboardItems.value[it])
             }
             true

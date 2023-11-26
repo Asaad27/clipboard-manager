@@ -8,8 +8,8 @@ import repository.interfaces.IClipboardRepository
 class ClipboardRepository(private val clipboardDao: IClipboardDao) : IClipboardRepository {
 
 
-    override suspend fun save(content: ClipboardModel) {
-        clipboardDao.upsertContent(content)
+    override suspend fun save(content: ClipboardModel): ClipboardModel {
+        return clipboardDao.upsertContent(content).toClipboardModel()
     }
 
     override suspend fun getAll(): List<ClipboardModel> {

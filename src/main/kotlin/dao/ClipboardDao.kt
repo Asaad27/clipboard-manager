@@ -17,8 +17,8 @@ class ClipboardDao(driverManager: DriverManager) : IClipboardDao {
         createSchemaIfNotExist()
     }
 
-    override fun upsertContent(model: ClipboardModel) {
-        transaction {
+    override fun upsertContent(model: ClipboardModel): ClipboardEntity {
+        return transaction {
             addLogger(StdOutSqlLogger)
 
             ClipboardEntity.new {
@@ -31,6 +31,7 @@ class ClipboardDao(driverManager: DriverManager) : IClipboardDao {
                 updatedAt = model.lastUpdated
             }
         }
+
     }
 
     override fun getAllContents(): List<ClipboardEntity> {

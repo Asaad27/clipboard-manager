@@ -7,8 +7,8 @@ import services.interfaces.IClipboardService
 class ClipboardService(
     private val clipboardRepository: IClipboardRepository
 ) : IClipboardService {
-    override suspend fun saveClipboardContent(content: ClipboardModel) {
-        clipboardRepository.save(content)
+    override suspend fun saveClipboardContent(content: ClipboardModel): ClipboardModel {
+        return clipboardRepository.save(content)
     }
 
     override suspend fun getAllClipboardContents(): List<ClipboardModel> {

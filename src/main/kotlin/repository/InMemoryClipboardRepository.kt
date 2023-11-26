@@ -6,8 +6,9 @@ import repository.interfaces.IClipboardRepository
 class InMemoryClipboardRepository : IClipboardRepository {
     private val clipboardHistory = mutableListOf<ClipboardModel>()
 
-    override suspend fun save(content: ClipboardModel) {
+    override suspend fun save(content: ClipboardModel): ClipboardModel {
         clipboardHistory.add(content)
+        return content
     }
 
     override suspend fun getAll(): List<ClipboardModel> {
