@@ -18,6 +18,7 @@ class ClipboardViewModel(
     val clipboardContents = _clipboardContents.asStateFlow()
 
     private var clipboardJob: Job? = null
+    private val searchJob: Job? = null
 
     init {
         init(CoroutineScope(Dispatchers.IO + SupervisorJob()))
@@ -63,8 +64,9 @@ class ClipboardViewModel(
     }
 
     fun onSearchClipboardContent(value: String) {
+        searchJob?.cancel()
         viewModelScope.launch {
-            clipboardService.searchClipboardContents(value).let {
+            clipboardService.searchClipboardContents(value).collect {
                 _clipboardContents.value = it
             }
         }

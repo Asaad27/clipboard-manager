@@ -1,5 +1,6 @@
 package repository
 
+import kotlinx.coroutines.flow.Flow
 import model.ClipboardModel
 import repository.interfaces.IClipboardRepository
 
@@ -17,5 +18,9 @@ class InMemoryClipboardRepository : IClipboardRepository {
 
     override suspend fun getById(id: Int): ClipboardModel? {
         return clipboardHistory.firstOrNull { it.id == id }
+    }
+
+    override suspend fun search(query: String): Flow<List<ClipboardModel>> {
+        TODO("Not yet implemented")
     }
 }

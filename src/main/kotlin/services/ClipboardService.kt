@@ -1,5 +1,6 @@
 package services
 
+import kotlinx.coroutines.flow.Flow
 import model.ClipboardModel
 import repository.interfaces.IClipboardRepository
 import services.interfaces.IClipboardService
@@ -15,13 +16,15 @@ class ClipboardService(
         return clipboardRepository.getAll()
     }
 
-    override suspend fun searchClipboardContents(query: String): List<ClipboardModel> {
-        return clipboardRepository.getAll().filter {
-            it.fullContent.contains(query, ignoreCase = true)
-        }
+    override suspend fun searchClipboardContents(query: String): Flow<List<ClipboardModel>> {
+        return clipboardRepository.search(query)
     }
 
     override suspend fun getCurrentCopiedContent(): ClipboardModel? {
-        return clipboardRepository.getAll().lastOrNull()
+        throw NotImplementedError()
+    }
+
+    override suspend fun getClipboardContentById(id: Int): ClipboardModel? {
+        return clipboardRepository.getById(id)
     }
 }
