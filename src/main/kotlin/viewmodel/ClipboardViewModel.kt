@@ -14,9 +14,9 @@ class ClipboardViewModel(
 
     private val _originalClipboardContents = MutableStateFlow<List<ClipboardModel>>(listOf())
     private val _filteredClipboardContents = MutableStateFlow<List<ClipboardModel>>(listOf())
-
     val clipboardContents = _filteredClipboardContents.asStateFlow()
 
+    private var isSearching: Boolean = false
     private var searchJob: Job? = null
 
     init {
@@ -42,7 +42,7 @@ class ClipboardViewModel(
             clipboardService.saveClipboardContent(content).also {
                 println("saved: $it")
                 _originalClipboardContents.value += it
-                if (searchJob?.isActive != true) {
+                if (!isSearching) {
                     _filteredClipboardContents.value += it
                 }
             }
@@ -59,6 +59,7 @@ class ClipboardViewModel(
 
     fun onSearchClipboardContent(value: String) {
         searchJob?.cancel()
+        isSearching = value.isNotEmpty()
         _filteredClipboardContents.value = listOf()
         if (value.isEmpty()) {
             _filteredClipboardContents.value = _originalClipboardContents.value.toList()

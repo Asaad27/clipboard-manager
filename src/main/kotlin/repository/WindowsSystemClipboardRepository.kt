@@ -29,19 +29,13 @@ class WindowsSystemClipboardRepository : ClipboardOwner, ISystemClipboardReposit
     }
 
     override fun lostOwnership(clipboard: Clipboard, contents: Transferable) {
-        try {
-            Thread.sleep(500)
-        } catch (e: Exception) {
-            throw e
-        }
+        takeOwnership()
         val newContent = getCurrentContent()
         newContent?.let { clipboardChannel.trySend(it) }
-        takeOwnership()
     }
 
     override fun getCurrentContent(): ClipboardModel? {
         return try {
-            takeOwnership()
             val textContent = clipboard.extractText()
             if (textContent.isEmpty()) return null
             val preview = textContent.toPreview()
@@ -57,11 +51,14 @@ class WindowsSystemClipboardRepository : ClipboardOwner, ISystemClipboardReposit
     }
 
     private fun takeOwnership() {
-        try {
-            val transferable = clipboard.getContents(this)
-            clipboard.setContents(transferable, this)
-        } catch (e: Exception) {
-            throw e
+        repeat(3) {
+            try {
+                val transferable = clipboard.getContents(this)
+                clipboard.setContents(transferable, this)
+                return
+            } catch (e: IllegalStateException) {
+                Thread.sleep(500)
+            }
         }
     }
 }

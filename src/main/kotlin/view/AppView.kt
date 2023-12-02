@@ -21,10 +21,13 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import model.ClipboardModel
 import view.AppColors
 import viewmodel.ClipboardViewModel
+
+private const val DEBOUNCE_TIME = 300L
 
 @Composable
 @Preview
@@ -35,6 +38,8 @@ fun App(viewModel: ClipboardViewModel) {
     val copiedItemIndexState = remember { mutableStateOf<Int?>(null) }
     val focusedIndexState = remember { mutableStateOf<Int?>(null) }
     val focusRequester = remember { FocusRequester() }
+    val searchTextState = remember { mutableStateOf("") }
+
 
     LaunchedEffect(focusedIndexState.value) {
         focusRequester.requestFocus()
@@ -54,8 +59,6 @@ fun App(viewModel: ClipboardViewModel) {
         Surface(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.fillMaxSize().padding(16.dp).border(1.dp, Color.Black)) {
                 Column {
-                    val searchText = remember { mutableStateOf("") }
-
                     Box(
                         modifier = Modifier
                             .focusRequester(focusRequester)
@@ -79,9 +82,8 @@ fun App(viewModel: ClipboardViewModel) {
                         }
                     }
 
-                    SearchBar(searchText.value) {
-                        searchText.value = it
-                        viewModel.onSearchClipboardContent(searchText.value)
+                    SearchBar(searchTextState) {
+                        viewModel.onSearchClipboardContent(searchTextState.value)
                     }
                 }
             }
@@ -90,17 +92,26 @@ fun App(viewModel: ClipboardViewModel) {
 }
 
 @Composable
-fun SearchBar(searchText: String, onSearchTextChanged: (String) -> Unit) {
+fun SearchBar(searchTextState: MutableState<String>, onSearchTextChanged: (String) -> Unit) {
+    val scope = rememberCoroutineScope()
+
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         TextField(
-            value = searchText,
+            value = searchTextState.value,
             label = { Text("Search") },
             onValueChange = {
-                onSearchTextChanged(it)
+                searchTextState.value = it
             },
             modifier = Modifier.weight(1f).padding(8.dp),
             colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.White)
         )
+    }
+
+    LaunchedEffect(searchTextState.value) {
+        scope.launch {
+            delay(timeMillis = DEBOUNCE_TIME)
+            onSearchTextChanged(searchTextState.value)
+        }
     }
 }
 
