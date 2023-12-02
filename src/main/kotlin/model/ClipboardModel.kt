@@ -9,7 +9,7 @@ data class ClipboardModel(
     val id: Int? = null,
     val preview: String = "",
     val fullContent: String = "",
-    val lastUpdated: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+    var lastUpdated: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
 ) {
     override fun equals(other: Any?): Boolean {
         return fullContent.equals((other as ClipboardModel).fullContent, ignoreCase = true)

@@ -6,6 +6,7 @@ import services.interfaces.ISystemClipboardService
 
 class WindowsSystemClipboardService(private val systemClipboardRepository: ISystemClipboardRepository) :
     ISystemClipboardService {
+
     override fun getCurrentContent(): ClipboardModel? {
         return systemClipboardRepository.getCurrentContent()
     }
@@ -13,4 +14,6 @@ class WindowsSystemClipboardService(private val systemClipboardRepository: ISyst
     override fun setCurrentContent(content: ClipboardModel) {
         systemClipboardRepository.setCurrentContent(content)
     }
+
+    override fun clipboardFlow() = systemClipboardRepository.clipboardFlow()
 }

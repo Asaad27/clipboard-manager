@@ -7,50 +7,44 @@ import model.ClipboardModel
 import services.interfaces.IClipboardService
 import services.interfaces.ISystemClipboardService
 
-const val DELAY_TIME = 1000L
-
 class ClipboardViewModel(
     private val systemClipboard: ISystemClipboardService,
     private val clipboardService: IClipboardService
 ) : ViewModel() {
 
-    private val _clipboardContents = MutableStateFlow<List<ClipboardModel>>(listOf())
-    val clipboardContents = _clipboardContents.asStateFlow()
+    private val _originalClipboardContents = MutableStateFlow<List<ClipboardModel>>(listOf())
+    private val _filteredClipboardContents = MutableStateFlow<List<ClipboardModel>>(listOf())
 
-    private var clipboardJob: Job? = null
-    private val searchJob: Job? = null
+    val clipboardContents = _filteredClipboardContents.asStateFlow()
+
+    private var searchJob: Job? = null
 
     init {
         init(CoroutineScope(Dispatchers.IO + SupervisorJob()))
 
-        clipboardJob = viewModelScope.launch {
+        viewModelScope.launch {
             monitorClipboard()
         }
 
         viewModelScope.launch {
             clipboardService.getAllClipboardContents().let {
-                _clipboardContents.value = it
+                _originalClipboardContents.value = it
+                _filteredClipboardContents.value = it.toList()
             }
         }
     }
 
     private suspend fun monitorClipboard() {
-        while (clipboardJob?.isActive == true) {
-            try {
-                val systemClipboardContent = systemClipboard.getCurrentContent() ?: continue
-                val lastContent = _clipboardContents.value.lastOrNull() ?: ClipboardModel()
-                if (systemClipboardContent != lastContent) {
-                    viewModelScope.launch {
-                        clipboardService.saveClipboardContent(systemClipboardContent).also {
-                            println("saved: $it")
-                            _clipboardContents.value += it
-                        }
-                    }
-                }
+        systemClipboard.clipboardFlow().collect { systemClipboardContent ->
+            val content =
+                clipboardService.getByContent(systemClipboardContent.fullContent) ?: systemClipboardContent
 
-                delay(DELAY_TIME)
-            } catch (e: Exception) {
-                throw e
+            clipboardService.saveClipboardContent(content).also {
+                println("saved: $it")
+                _originalClipboardContents.value += it
+                if (searchJob?.isActive != true) {
+                    _filteredClipboardContents.value += it
+                }
             }
         }
     }
@@ -65,9 +59,14 @@ class ClipboardViewModel(
 
     fun onSearchClipboardContent(value: String) {
         searchJob?.cancel()
-        viewModelScope.launch {
-            clipboardService.searchClipboardContents(value).collect {
-                _clipboardContents.value = it
+        _filteredClipboardContents.value = listOf()
+        if (value.isEmpty()) {
+            _filteredClipboardContents.value = _originalClipboardContents.value.toList()
+        } else {
+            searchJob = viewModelScope.launch {
+                clipboardService.searchClipboardContents(value).collect {
+                    _filteredClipboardContents.value += it
+                }
             }
         }
     }

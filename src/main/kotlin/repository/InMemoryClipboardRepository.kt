@@ -16,11 +16,12 @@ class InMemoryClipboardRepository : IClipboardRepository {
         return clipboardHistory
     }
 
-    override suspend fun getById(id: Int): ClipboardModel? {
-        return clipboardHistory.firstOrNull { it.id == id }
-    }
-
-    override suspend fun search(query: String): Flow<List<ClipboardModel>> {
+    override suspend fun search(query: String): Flow<ClipboardModel> {
         TODO("Not yet implemented")
     }
+
+    override suspend fun getClipboardContentByContent(fullContent: String): ClipboardModel? {
+        TODO("Not yet implemented")
+    }
+
 }

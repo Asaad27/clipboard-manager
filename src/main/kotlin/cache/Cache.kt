@@ -4,7 +4,7 @@ import cache.strategy.EvictionStrategy
 import cache.strategy.LruStrategy
 import java.util.concurrent.ConcurrentHashMap
 
-class Cache<K, V>(private var evictionStrategy: EvictionStrategy<K, V>, private val capacity: Int) {
+class Cache<K, V>(private var evictionStrategy: EvictionStrategy<K, V>, private val capacity: Int = 500) {
     private val cache: MutableMap<K, V> = ConcurrentHashMap()
 
     fun setEvictionStrategy(evictionStrategy: EvictionStrategy<K, V>) {
@@ -17,7 +17,8 @@ class Cache<K, V>(private var evictionStrategy: EvictionStrategy<K, V>, private 
         }
     }
 
-    fun put(key: K, value: V) {
+    fun put(key: K, value: V?) {
+        if (value == null) return
         if (cache.size >= capacity) {
             evictionStrategy.evict(cache)
         }

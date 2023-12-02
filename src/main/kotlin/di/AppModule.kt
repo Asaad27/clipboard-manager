@@ -1,8 +1,6 @@
 package di
 
 
-import dao.ClipboardDao
-import dao.IClipboardDao
 import database.DriverManager
 import org.koin.dsl.module
 import repository.ClipboardRepository
@@ -18,7 +16,6 @@ import viewmodel.ClipboardViewModel
 
 val appModule = module {
     single<DriverManager> { DriverManager() }
-    single<IClipboardDao> { ClipboardDao(get()) }
 
     single<IClipboardRepository> { ClipboardRepository(get()) }
     single<ISystemClipboardRepository> { WindowsSystemClipboardRepository() }
