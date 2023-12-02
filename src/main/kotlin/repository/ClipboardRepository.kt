@@ -14,12 +14,13 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import repository.interfaces.IClipboardRepository
+import utils.md5
 
 class ClipboardRepository(
     driverManager: DriverManager
 ) : IClipboardRepository {
 
-    private val cache: Cache<Long, ClipboardEntity>
+    private val cache: Cache<String, ClipboardEntity>
 
     init {
         driverManager.connect()
@@ -28,7 +29,7 @@ class ClipboardRepository(
     }
 
     override suspend fun save(content: ClipboardModel): ClipboardModel {
-        val contentHash = content.fullContent.hashCode().toLong()
+        val contentHash = content.fullContent.md5()
         val existingElement = cache.get(contentHash)
 
         return transaction {
@@ -69,7 +70,7 @@ class ClipboardRepository(
     }
 
     override suspend fun getClipboardContentByContent(fullContent: String): ClipboardModel? {
-        val contentHash = fullContent.hashCode().toLong()
+        val contentHash = fullContent.md5()
         val existingElement = cache.get(contentHash)
         existingElement?.let {
             return it.toClipboardModel()

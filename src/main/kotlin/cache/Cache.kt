@@ -2,10 +2,12 @@ package cache
 
 import cache.strategy.EvictionStrategy
 import cache.strategy.LruStrategy
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
 class Cache<K, V>(private var evictionStrategy: EvictionStrategy<K, V>, private val capacity: Int = 500) {
     private val cache: MutableMap<K, V> = ConcurrentHashMap()
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     fun setEvictionStrategy(evictionStrategy: EvictionStrategy<K, V>) {
         this.evictionStrategy = evictionStrategy
@@ -13,6 +15,7 @@ class Cache<K, V>(private var evictionStrategy: EvictionStrategy<K, V>, private 
 
     fun get(key: K): V? {
         return cache[key]?.also {
+            logger.debug("cache hit for: {} and value: {}", key, it)
             recordAccess(key, it)
         }
     }
