@@ -8,14 +8,15 @@ import org.slf4j.LoggerFactory
 import services.interfaces.IClipboardService
 import services.interfaces.ISystemClipboardService
 
-class ClipboardViewModel(
+open class ClipboardViewModel(
     private val systemClipboard: ISystemClipboardService,
     private val clipboardService: IClipboardService
 ) : ViewModel() {
     private val logger = LoggerFactory.getLogger(javaClass)
-    private val _originalClipboardContents = MutableStateFlow<List<ClipboardModel>>(listOf())
-    private val _filteredClipboardContents = MutableStateFlow<List<ClipboardModel>>(listOf())
-    val clipboardContents = _filteredClipboardContents.asStateFlow()
+
+    protected val originalClipboardContents = MutableStateFlow<List<ClipboardModel>>(listOf())
+    protected val filteredClipboardContents = MutableStateFlow<List<ClipboardModel>>(listOf())
+    val clipboardContents = filteredClipboardContents.asStateFlow()
 
     private var isSearching: Boolean = false
     private var searchJob: Job? = null
@@ -29,8 +30,8 @@ class ClipboardViewModel(
 
         viewModelScope.launch {
             clipboardService.getAllClipboardContents().let {
-                _originalClipboardContents.value = it
-                _filteredClipboardContents.value = it.toList()
+                originalClipboardContents.value = it
+                filteredClipboardContents.value = it.toList()
             }
         }
     }
@@ -41,10 +42,13 @@ class ClipboardViewModel(
                 clipboardService.getByContent(systemClipboardContent.fullContent) ?: systemClipboardContent
 
             clipboardService.saveClipboardContent(content).also {
-                logger.debug("saved: {}", it)
-                _originalClipboardContents.value += it
+                logger.debug("saved: {}", it.preview)
+                originalClipboardContents.value += it
                 if (!isSearching) {
-                    _filteredClipboardContents.value += it
+                    filteredClipboardContents.value += it
+                    logger.debug("filteredClipboardContents.value: {}", filteredClipboardContents.value.size)
+                    logger.debug("originalClipboardContents.value: {}", originalClipboardContents.value.size)
+                    logger.debug("clipboardContents.value: {}", clipboardContents.value.size)
                 }
             }
         }
@@ -61,13 +65,13 @@ class ClipboardViewModel(
     fun onSearchClipboardContent(value: String) {
         searchJob?.cancel()
         isSearching = value.isNotEmpty()
-        _filteredClipboardContents.value = listOf()
+        filteredClipboardContents.value = listOf()
         if (value.isEmpty()) {
-            _filteredClipboardContents.value = _originalClipboardContents.value.toList()
+            filteredClipboardContents.value = originalClipboardContents.value.toList()
         } else {
             searchJob = viewModelScope.launch {
                 clipboardService.searchClipboardContents(value).collect {
-                    _filteredClipboardContents.value += it
+                    filteredClipboardContents.value += it
                 }
             }
         }

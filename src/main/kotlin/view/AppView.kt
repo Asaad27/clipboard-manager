@@ -1,3 +1,5 @@
+package view
+
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -5,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.*
@@ -24,13 +27,60 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import model.ClipboardModel
-import view.AppColors
+import org.slf4j.LoggerFactory
 import viewmodel.ClipboardViewModel
+import viewmodel.preview.FakeClipboardViewModel
 
 private const val DEBOUNCE_TIME = 300L
+private val logger = LoggerFactory.getLogger("AppView")
+
+@Preview
+@Composable
+fun AppPreview() {
+    val viewModel = FakeClipboardViewModel()
+    App(viewModel)
+}
+
+@Preview
+@Composable
+fun ClipboardItemStandaloneFocusedPreview() {
+    val item = ClipboardModel(
+        id = 1,
+        preview = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+        fullContent = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+    )
+    ClipboardItem(item, isLastInClipboard = false, isFocused = true, onItemClicked = {})
+}
+
+@Preview
+@Composable
+fun ClipboardItemListContextualWithFocusedElementPreview() {
+    val clipboardItems = FakeClipboardViewModel.fakeClipboardContents
+    val clipboardItemsState = remember { mutableStateOf(clipboardItems) }
+    val focusedIndexState = remember { mutableStateOf<Int?>(FakeClipboardViewModel.fakeClipboardContents.size - 1) }
+    val copiedItemIndexState = remember { mutableStateOf<Int?>(null) }
+    val lazyListState = rememberLazyListState()
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusable()
+                    .weight(1f)
+            ) {
+                ClipboardList(
+                    clipboardItems = clipboardItemsState,
+                    copiedItemIndex = copiedItemIndexState,
+                    focusedItemIndex = focusedIndexState,
+                    lazyListState = lazyListState
+                ) {}
+            }
+        }
+    }
+}
 
 @Composable
-@Preview
 fun App(viewModel: ClipboardViewModel) {
     val scope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
@@ -66,20 +116,12 @@ fun App(viewModel: ClipboardViewModel) {
                             .weight(1f)
                             .onKeyEvent { onKeyEvent(it, focusedIndexState, clipboardItemState, viewModel) }
                     ) {
-                        LazyColumn(
-                            state = lazyListState,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .border(1.dp, Color.Black)
-                        ) {
-                            itemsIndexed(clipboardItemState.value) { index, item ->
-                                val isLastInClipboard = copiedItemIndexState.value == index
-                                val isFocused = focusedIndexState.value == index
-                                ClipboardItem(item, isLastInClipboard, isFocused, onItemClicked = {
-                                    viewModel.onItemClicked(it)
-                                })
-                            }
-                        }
+                        ClipboardList(
+                            clipboardItems = clipboardItemState,
+                            copiedItemIndex = copiedItemIndexState,
+                            focusedItemIndex = focusedIndexState,
+                            lazyListState = lazyListState
+                        ) { viewModel.onItemClicked(item = it) }
                     }
 
                     SearchBar(searchTextState) {
@@ -92,25 +134,23 @@ fun App(viewModel: ClipboardViewModel) {
 }
 
 @Composable
-fun SearchBar(searchTextState: MutableState<String>, onSearchTextChanged: (String) -> Unit) {
-    val scope = rememberCoroutineScope()
-
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        TextField(
-            value = searchTextState.value,
-            label = { Text("Search") },
-            onValueChange = {
-                searchTextState.value = it
-            },
-            modifier = Modifier.weight(1f).padding(8.dp),
-            colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.White)
-        )
-    }
-
-    LaunchedEffect(searchTextState.value) {
-        scope.launch {
-            delay(timeMillis = DEBOUNCE_TIME)
-            onSearchTextChanged(searchTextState.value)
+fun ClipboardList(
+    clipboardItems: State<List<ClipboardModel>>,
+    copiedItemIndex: MutableState<Int?>,
+    focusedItemIndex: MutableState<Int?>,
+    lazyListState: LazyListState,
+    onItemClicked: (ClipboardModel) -> Unit
+) {
+    LazyColumn(
+        state = lazyListState,
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, Color.Black)
+    ) {
+        itemsIndexed(clipboardItems.value) { index, item ->
+            val isLastInClipboard = copiedItemIndex.value == index
+            val isFocused = focusedItemIndex.value == index
+            ClipboardItem(item, isLastInClipboard, isFocused, onItemClicked = onItemClicked)
         }
     }
 }
@@ -160,7 +200,30 @@ fun ClipboardItem(
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun SearchBar(searchTextState: MutableState<String>, onSearchTextChanged: (String) -> Unit) {
+    val scope = rememberCoroutineScope()
+
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        TextField(
+            value = searchTextState.value,
+            label = { Text("Search") },
+            onValueChange = {
+                searchTextState.value = it
+            },
+            modifier = Modifier.weight(1f).padding(8.dp),
+            colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.White)
+        )
+    }
+
+    LaunchedEffect(searchTextState.value) {
+        scope.launch {
+            delay(timeMillis = DEBOUNCE_TIME)
+            onSearchTextChanged(searchTextState.value)
+        }
+    }
+}
+
 fun onKeyEvent(
     keyEvent: KeyEvent,
     focusedIndex: MutableState<Int?>,
