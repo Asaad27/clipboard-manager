@@ -1,10 +1,7 @@
 package view
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -80,6 +77,23 @@ fun ClipboardItemListContextualWithFocusedElementPreview() {
     }
 }
 
+@Preview
+@Composable
+fun ClipboardCopiedItemBoxPreview() {
+    val scrollState = rememberScrollState()
+    val longText = "a".repeat(100000)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(150.dp)
+            .verticalScroll(scrollState)
+            .background(Color.Black)
+
+    ) {
+        Text(longText, modifier = Modifier.padding(8.dp), color = Color.LightGray)
+    }
+}
+
 @Composable
 fun App(viewModel: ClipboardViewModel) {
     val scope = rememberCoroutineScope()
@@ -122,6 +136,10 @@ fun App(viewModel: ClipboardViewModel) {
                             focusedItemIndex = focusedIndexState,
                             lazyListState = lazyListState
                         ) { viewModel.onItemClicked(item = it) }
+                    }
+
+                    clipboardItemState.value.getOrNull(copiedItemIndexState.value ?: 0)?.let {
+                        ClipboardCopiedItemBox(it)
                     }
 
                     SearchBar(searchTextState) {
@@ -199,6 +217,24 @@ fun ClipboardItem(
         Text(item.preview, modifier = Modifier.padding(8.dp))
     }
 }
+
+@Composable
+fun ClipboardCopiedItemBox(item: ClipboardModel) {
+    val scrollState = rememberScrollState()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(150.dp)
+            .verticalScroll(scrollState)
+            .padding(4.dp)
+            .border(1.dp, Color.Green)
+            .background(Color.Black)
+
+    ) {
+        Text(item.fullContent, modifier = Modifier.padding(8.dp), color = Color.White)
+    }
+}
+
 
 @Composable
 fun SearchBar(searchTextState: MutableState<String>, onSearchTextChanged: (String) -> Unit) {

@@ -1,15 +1,15 @@
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import androidx.compose.ui.window.rememberWindowState
 import di.appModule
 import org.koin.core.context.startKoin
 import org.koin.java.KoinJavaComponent.inject
 import view.App
 import viewmodel.ClipboardViewModel
-import java.awt.Toolkit
-import java.awt.datatransfer.StringSelection
-import java.awt.event.KeyEvent
-import java.util.*
 
 fun main() = application {
     startKoin {
@@ -17,35 +17,26 @@ fun main() = application {
     }
 
     val viewModel: ClipboardViewModel by inject(ClipboardViewModel::class.java)
-    val icon = painterResource("sharingan.ico")
+    val shouldMinimize by viewModel.shouldMinimize.collectAsState()
+    val windowState = rememberWindowState(width = 400.dp, height = 1000.dp)
+
+    val icon = painterResource("icons/sharingan.png")
     Window(
         title = "Sharingan",
         icon = icon,
         visible = true,
         alwaysOnTop = true,
+        state = windowState,
         onCloseRequest = {
             viewModel.onCleared()
             exitApplication()
         }
     ) {
+        if (shouldMinimize) {
+            windowState.isMinimized = true
+            viewModel.onWindowMinimized()
+        }
+
         App(viewModel)
     }
-}
-
-fun simulatePaste() {
-    val robot = java.awt.Robot()
-    val ctrlKey =
-        if (System.getProperty("os.name").lowercase(Locale.getDefault())
-                .contains("mac")
-        ) KeyEvent.VK_META else KeyEvent.VK_CONTROL
-    robot.keyPress(ctrlKey)
-    robot.keyPress(KeyEvent.VK_V)
-    robot.keyRelease(KeyEvent.VK_V)
-    robot.keyRelease(ctrlKey)
-}
-
-fun setClipboardContent(content: String) {
-    val stringSelection = StringSelection(content)
-    val clipboard = Toolkit.getDefaultToolkit().systemClipboard
-    clipboard.setContents(stringSelection, null)
 }

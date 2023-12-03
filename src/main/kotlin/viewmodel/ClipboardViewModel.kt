@@ -7,6 +7,8 @@ import model.ClipboardModel
 import org.slf4j.LoggerFactory
 import services.interfaces.IClipboardService
 import services.interfaces.ISystemClipboardService
+import java.awt.event.KeyEvent
+import java.util.*
 
 open class ClipboardViewModel(
     private val systemClipboard: ISystemClipboardService,
@@ -17,6 +19,9 @@ open class ClipboardViewModel(
     protected val originalClipboardContents = MutableStateFlow<List<ClipboardModel>>(listOf())
     protected val filteredClipboardContents = MutableStateFlow<List<ClipboardModel>>(listOf())
     val clipboardContents = filteredClipboardContents.asStateFlow()
+
+    private val _shouldMinimize = MutableStateFlow(false)
+    val shouldMinimize = _shouldMinimize.asStateFlow()
 
     private var isSearching: Boolean = false
     private var searchJob: Job? = null
@@ -81,6 +86,28 @@ open class ClipboardViewModel(
         logger.debug("onItemClicked: {}", item)
         viewModelScope.launch {
             systemClipboard.setCurrentContent(item)
+            pasteContent()
+        }
+    }
+
+    fun onWindowMinimized() {
+        _shouldMinimize.value = false
+    }
+
+    private fun pasteContent() {
+        viewModelScope.launch {
+            _shouldMinimize.value = true
+            delay(500)
+            val robot = java.awt.Robot()
+            val ctrlKey =
+                if (System.getProperty("os.name").lowercase(Locale.getDefault())
+                        .contains("mac")
+                ) KeyEvent.VK_META else KeyEvent.VK_CONTROL
+            robot.keyPress(ctrlKey)
+            robot.keyPress(KeyEvent.VK_V)
+            robot.keyRelease(KeyEvent.VK_V)
+            robot.keyRelease(ctrlKey)
+            onWindowMinimized()
         }
     }
 }
